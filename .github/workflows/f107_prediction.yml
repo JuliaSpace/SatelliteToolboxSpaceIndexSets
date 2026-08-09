@@ -1,0 +1,49 @@
+name: F10.7 Prediction Coefficients
+
+on:
+  schedule:
+    # Run every day at 21:00 UTC.
+    - cron: "0 21 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fit:
+    name: Fit F10.7 Prediction Coefficients
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+
+      - name: Setup Julia
+        uses: julia-actions/setup-julia@v2
+        with:
+          version: "1"
+
+      - name: Cache Julia artifacts
+        uses: julia-actions/cache@v2
+
+      - name: Instantiate the project
+        run: julia --project=scripts/f107_prediction -e 'using Pkg; Pkg.instantiate()'
+
+      - name: Run the fitting script
+        run: >
+          julia --project=scripts/f107_prediction --color=yes
+          scripts/f107_prediction/fit_f107.jl
+          files/f107_prediction_coefficients.csv
+
+      - name: Commit and push the changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add files/f107_prediction_coefficients.csv
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Update the F10.7 prediction coefficients"
+            git push
+          fi
