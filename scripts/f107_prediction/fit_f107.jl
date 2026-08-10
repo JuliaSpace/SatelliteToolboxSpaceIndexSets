@@ -4,8 +4,7 @@
 # satellite decay analysis. It fits the data from 1957 up to today considering the following
 # model:
 #
-# F̄₁₀.₇ = F₀ +     ∑      aᵢ ⋅ sin(2π ⋅ i ⋅ (t - t₀) / P) + bᵢ ⋅ cos(2π ⋅ i ⋅ (t - t₀) / P),
-#              i ∈ [1, 6]
+#     F̄₁₀.₇(t) = F₀ + Σᵢ₌₁⁶ [aᵢ sin(2πi (t - t₀) / P) + bᵢ cos(2πi (t - t₀) / P)],
 #
 # where `t₀` is the reference day (1957-10-02) represented in Julian day. The fitting
 # coefficients are:
