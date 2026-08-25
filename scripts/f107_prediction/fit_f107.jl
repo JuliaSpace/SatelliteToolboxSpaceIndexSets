@@ -20,6 +20,8 @@
 #
 # This model was based on the information available in [1].
 #
+# We provide one version for the observed and other for the adjusted F10.7 solar flux index.
+#
 ## References ##############################################################################
 #
 # [1] D. Whitlock (2006). "Modeling the Effect of High Solar Activity on the Orbital Debris
@@ -171,25 +173,36 @@ end
 ############################################################################################
 
 """
-    fit_curve(output_file::String) -> LsqFit.LsqFitResult
+    fit_curve(output_file::String, indices::Symbol = :observed) -> LsqFit.LsqFitResult
 
-Fit the harmonic F10.7 prediction model to the Celestrak observed data from 1957-10-02 up
-to today and write the resulting coefficients to the CSV file `output_file`.
+Fit the harmonic F10.7 prediction model to the Celestrak data from 1957-10-02 up to today
+and write the resulting coefficients to the CSV file `output_file`. The argument `indices`
+selects whether the `:observed` or the `:adjusted` F10.7 solar flux index is fitted.
 
 The function prints a report of each step, warning if the least-squares fitting did not
 converge. It returns the least-squares result, allowing further inspection of the fitted
 parameters and residuals.
 
+The function throws if `indices` is neither `:observed` nor `:adjusted`.
+
 # Arguments
 
 - `output_file::String`: Path of the output CSV file. Intermediate directories are created
     if they do not exist.
-    (**Default**: `joinpath(@__DIR__, "f107_prediction_coefficients.csv")`)
+    (**Default**: `joinpath(@__DIR__, "f107_observed_prediction_coefficients.csv")`)
+- `indices::Symbol`: F10.7 index set used in the fitting: `:observed` or `:adjusted`.
+    (**Default**: `:observed`)
 """
 function fit_curve(
-    output_file::String = joinpath(@__DIR__, "f107_prediction_coefficients.csv")
+    output_file::String = joinpath(@__DIR__, "f107_observed_prediction_coefficients.csv"),
+    indices::Symbol = :observed
 )
-    print_header("F10.7 Prediction Coefficient Fitting")
+    indices ∈ (:observed, :adjusted) ||
+        throw(ArgumentError("The index set `indices` must be `:observed` or `:adjusted`."))
+
+    index_id = indices == :observed ? :F10obs : :F10adj
+
+    print_header("F10.7 Prediction Coefficient Fitting ($indices)")
 
     run_step("Initializing the space indices (Celestrak)") do
         SpaceIndices.init(SpaceIndices.Celestrak)
@@ -201,10 +214,10 @@ function fit_curve(
     dt₁ = today()
     t₀  = datetime2julian(DateTime(dt₀))
 
-    vt, vf107 = run_step("Fetching the F10.7 observations") do
+    vt, vf107 = run_step("Fetching the $indices F10.7 indices") do
         vdt = dt₀:Day(1):dt₁
         vt  = datetime2julian.(DateTime.(vdt))
-        vt, space_index.(Val(:F10obs), vt)
+        vt, space_index.(Val(index_id), vt)
     end
 
     print_info("$(length(vf107)) samples from $dt₀ to $dt₁.")
@@ -240,5 +253,12 @@ function fit_curve(
     return fit
 end
 
-# The output file can be passed as the first command-line argument.
-isempty(ARGS) ? fit_curve() : fit_curve(ARGS[1])
+# The output file can be passed as the first command-line argument and the F10.7 index set
+# (`observed` or `adjusted`) as the second one.
+if isempty(ARGS)
+    fit_curve()
+elseif length(ARGS) == 1
+    fit_curve(ARGS[1])
+else
+    fit_curve(ARGS[1], Symbol(ARGS[2]))
+end

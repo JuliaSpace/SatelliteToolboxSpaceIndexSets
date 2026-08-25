@@ -15,16 +15,18 @@ directory and are updated automatically every day by a GitHub action.
 
 ## Generated Files
 
-| File                               | Description                                        |
-|:-----------------------------------|:---------------------------------------------------|
-| `f107_prediction_coefficients.csv` | Coefficients to predict the F10.7 solar flux index |
+| File                                        | Description                                                 |
+|:--------------------------------------------|:------------------------------------------------------------|
+| `f107_observed_prediction_coefficients.csv` | Coefficients to predict the observed F10.7 solar flux index |
+| `f107_adjusted_prediction_coefficients.csv` | Coefficients to predict the adjusted F10.7 solar flux index |
 
 ## F10.7 Prediction Coefficients
 
 The script [`fit_f107.jl`](./scripts/f107_prediction/fit_f107.jl) generates the
 coefficients to predict the F10.7 solar flux index for satellite decay analysis. It fits
-the observed data obtained from [Celestrak](https://celestrak.org), from 1957-10-02 up to
-the current day, considering the following harmonic model:
+either the observed or the adjusted data obtained from
+[Celestrak](https://celestrak.org), from 1957-10-02 up to the current day, considering the
+following harmonic model:
 
 ```math
 \bar{F}_{10.7} = F_0 + \sum_{i = 1}^{6} a_i \sin\left(2\pi i \frac{t - t_0}{P}\right) +
@@ -43,9 +45,11 @@ This model was based on the information available in **[1]**.
 
 ### Output Format
 
-The output is stored in the CSV file
-[`files/f107_prediction_coefficients.csv`](./files/f107_prediction_coefficients.csv) with
-the following columns:
+The output is stored in the CSV files
+[`files/f107_observed_prediction_coefficients.csv`](./files/f107_observed_prediction_coefficients.csv)
+(observed index) and
+[`files/f107_adjusted_prediction_coefficients.csv`](./files/f107_adjusted_prediction_coefficients.csv)
+(adjusted index) with the following columns:
 
 ```
 t₀, F₀, P, a₁, a₂, a₃, a₄, a₅, a₆, b₁, b₂, b₃, b₄, b₅, b₆
@@ -68,11 +72,13 @@ Afterward, run the fitting with:
 julia --project=scripts/f107_prediction scripts/f107_prediction/fit_f107.jl
 ```
 
-The output file path can be passed as the first command-line argument. If omitted, the
-file is written next to the script:
+The output file path can be passed as the first command-line argument and the F10.7 index
+set (`observed` or `adjusted`) as the second one. If omitted, the script fits the observed
+index and writes the file next to itself:
 
 ```bash
-julia --project=scripts/f107_prediction scripts/f107_prediction/fit_f107.jl files/f107_prediction_coefficients.csv
+julia --project=scripts/f107_prediction scripts/f107_prediction/fit_f107.jl files/f107_observed_prediction_coefficients.csv observed
+julia --project=scripts/f107_prediction scripts/f107_prediction/fit_f107.jl files/f107_adjusted_prediction_coefficients.csv adjusted
 ```
 
 The script prints a report of each step, including the convergence status, the fitted
@@ -82,8 +88,8 @@ parameters, and the root-mean-square error of the residuals.
 
 The GitHub action
 [`f107_prediction.yml`](./.github/workflows/f107_prediction.yml) runs the fitting script
-every day at 21:00 UTC, writes the output to the [`files`](./files) directory, and commits
-the result if the coefficients changed. It can also be triggered manually from the Actions
+every day at 21:00 UTC for both the observed and the adjusted indices, writes the outputs
+to the [`files`](./files) directory, and commits the result if the coefficients changed. It can also be triggered manually from the Actions
 tab using the `workflow_dispatch` event.
 
 ## References
