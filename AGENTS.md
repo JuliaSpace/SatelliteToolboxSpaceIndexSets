@@ -4,16 +4,16 @@ This repository is not a Julia package. It contains standalone Julia scripts tha
 
 ## Repository Structure
 
-- `scripts/f107_prediction/fit_f107.jl` fits a 6-harmonic model to the Celestrak F10.7 observed data and writes the prediction coefficients to a CSV file. It has its own project environment (`Project.toml` + `Manifest.toml`) in the same directory.
-- `files/` holds the generated data files. `files/f107_prediction_coefficients.csv` is the canonical output; the copy the script writes next to itself when run without arguments is a local convenience only.
+- `scripts/f107_prediction/fit_f107.jl` fits a 6-harmonic model to the Celestrak F10.7 observed or adjusted data and writes the prediction coefficients to a CSV file. It has its own project environment (`Project.toml`) in the same directory.
+- `files/` holds the generated data files. `files/f107_observed_prediction_coefficients.csv` and `files/f107_adjusted_prediction_coefficients.csv` are the canonical outputs; the copy the script writes next to itself when run without arguments is a local convenience only.
 - `.github/workflows/f107_prediction.yml` runs the fitting script every day at 21:00 UTC (and on `workflow_dispatch`), writing to `files/` and committing only when the output changed.
 - `docs/assets/logo.png` is the ecosystem logo used by `README.md`. There is no Documenter build.
-- `Manifest.toml` is committed: the dependency tree is pinned (last resolved with Julia 1.12.6). Do not run `Pkg.update()` or add dependencies casually; if you add a dependency, use `Pkg.add` inside the script's project so both `Project.toml` and `Manifest.toml` stay in sync.
+- `Manifest.toml` is not committed and must never be: the environment is resolved from `Project.toml` by `Pkg.instantiate()`. Do not add dependencies casually; if you add one, use `Pkg.add` inside the script's project so `Project.toml` stays consistent.
 
 ## Commands
 
 - Instantiate: `julia --project=scripts/f107_prediction -e 'using Pkg; Pkg.instantiate()'` (first run precompiles for a while; use generous timeouts).
-- Run the F10.7 fit: `julia --project=scripts/f107_prediction scripts/f107_prediction/fit_f107.jl files/f107_prediction_coefficients.csv` — the first command-line argument is the output path; omitting it writes next to the script.
+- Run the F10.7 fit: `julia --project=scripts/f107_prediction scripts/f107_prediction/fit_f107.jl files/f107_observed_prediction_coefficients.csv observed` — the first command-line argument is the output path and the second is the index set (`observed` or `adjusted`); omitting them fits the observed index and writes next to the script.
 - The script downloads the Celestrak space index files through SpaceIndices.jl at runtime, so it requires network access.
 - There is no test suite; verifying a change means running the script and checking that it converges and the output matches the documented column layout.
 
